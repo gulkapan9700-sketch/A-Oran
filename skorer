@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKORER • Spor Intelligence Platform</title>
+
+    <!-- Fontlar -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <!-- GLOBAL WRAPPER -->
+    <div class="app-wrapper">
+
+        <!-- ✅ ÜST MENÜ + CANLI TICKER -->
+        <header class="topbar">
+            <div class="logo">SKORER<strong>PRO</strong></div>
+            <div class="ticker" id="liveTicker">Canlı skor yükleniyor...</div>
+
+            <div class="top-actions">
+                <button class="action-btn" onclick="refreshAll()">↻ Yenile</button>
+            </div>
+        </header>
+
+
+        <!-- ✅ SAYFA YAPISI -->
+        <div class="layout">
+
+            <!-- ✅ SOL MENU -->
+            <aside class="sidebar">
+                <div class="side-title">📂 KATEGORİLER</div>
+
+                <button class="side-btn on" onclick="setTab('all')">Tümü</button>
+                <button class="side-btn" onclick="setTab('football')">⚽ Futbol</button>
+                <button class="side-btn" onclick="setTab('basket')">🏀 Basketbol</button>
+                <button class="side-btn" onclick="setTab('live')">🔴 Canlı</button>
+                <button class="side-btn" onclick="setTab('soon')">⏳ Başlamadı</button>
+                <button class="side-btn" onclick="setTab('finished')">✅ Bitti</button>
+
+                <div class="side-title mt20">🌍 Lig Filtreleri</div>
+                <button class="side-btn" onclick="setLeague('tr')">🇹🇷 Türkiye</button>
+                <button class="side-btn" onclick="setLeague('europe')">🏆 Avrupa</button>
+                <button class="side-btn" onclick="setLeague('nba')">🇺🇸 NBA</button>
+            </aside>
+
+
+            <!-- ✅ ORTA ALAN (MAÇ FEEDİ) -->
+            <main class="content-area">
+
+                <!-- SAYFA BAŞLIK BLOĞU -->
+                <section class="page-head">
+                    <h1>Canlı Spor Akışı</h1>
+                    <p class="subtitle">Futbol ve Basketbol • Gerçek zamanlı veriler • AI destekli analiz</p>
+                </section>
+
+                <div id="matchFeed" class="match-feed">
+                    <div class="loader">Veriler yükleniyor...</div>
+                </div>
+
+            </main>
+
+
+            <!-- ✅ PREMIUM SAĞ PANEL -->
+            <aside class="premium-panel">
+
+                <div class="panel-card glass">
+                    <h2 class="panel-title">⭐ Premium AI Panel</h2>
+                    <p class="panel-desc">Yapay zeka destekli analizlere anında erişin.</p>
+
+                    <button class="premium-btn">Premium Üyelik Al</button>
+                </div>
+
+                <div class="panel-card glass">
+                    <h2 class="panel-title">🎯 AI Value Radar</h2>
+                    <div id="valueRadar" class="info-box">Yükleniyor...</div>
+                </div>
+
+                <div class="panel-card glass">
+                    <h2 class="panel-title">🧠 Önerilen AI Kupon</h2>
+                    <div id="aiCoupon" class="info-box">Kupon yükleniyor...</div>
+                </div>
+
+            </aside>
+
+        </div>
+    </div>
+
+
+    <!-- ✅ JavaScript -->
+    <script src="app.js"></script>
+
+</body>
+</html>
