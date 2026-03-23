@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SKORER — Spor Analiz Platformu</title>
+<style>
+body { background:#040710; color:#fff; font-family: "DM Sans", sans-serif; }
+</style>
+</head>
+<body>
+<h1 style="padding:20px;">⚽ SKORER — Backend Bağlantılı Sürüm</h1>
+<div id="status" style="padding:20px; color:#9ca3af;">Bağlanıyor...</div>
+<div id="matches" style="padding:20px;"></div>
+<script>
+const API = "http://localhost:3000";
+const statusEl = document.getElementById("status");
+const matchesEl = document.getElementById("matches");
+async function getToday() {
+    try {
+        const r = await fetch(`${API}/fb/today`);
+        const data = await r.json();
+        if (!data.length) {
+            statusEl.innerHTML = "⚠ Veri bulunamadı veya backend kapalı.";
+            return;
+        }
+        statusEl.innerHTML = `✅ ${data.length} maç yüklendi`;
+        matchesEl.innerHTML = data.map(m => `
+        <div style="margin-bottom:15px; padding:15px; background:#0f1520; border-radius:8px;">
+            <div style="font-size:14px; color:#c9a84c;">${m.league.name} — ${m.league.country}</div>
+            <div style="margin-top:8px; font-size:18px; font-weight:600;">${m.teams.home.name} vs ${m.teams.away.name}</div>
+            <div style="margin-top:5px; font-size:12px; color:#9ca3af;">${new Date(m.fixture.date).toLocaleTimeString("tr-TR")} </div>
+            <button onclick="loadDetails(${m.fixture.id})" style="margin-top:10px; padding:6px 10px; border:none; background:#c9a84c; color:#000; border-radius:4px; cursor:pointer;">Detayları Getir</button>
+            <div id="details-${m.fixture.id}"></div>
+        </div>`).join("");
+    } catch (err) {
+        statusEl.innerHTML = "❌ Backend'e bağlanılamıyor!";
+    }
+}
+async function loadDetails(id) {
+    const el = document.getElementById(`details-${id}`);
+    el.innerHTML = "<div style='padding:10px; color:#9ca3af;'>Yükleniyor...</div>";
+    const [odds, pred] = await Promise.all([
+        fetch(`${API}/fb/odds/${id}`).then(r => r.json()),
+        fetch(`${API}/fb/pred/${id}`).then(r => r.json()),
+    ]);
+    const o = odds[0]?.bookmakers?.[0]?.bets || [];
+    const p = pred[0]?.predictions || null;
+    el.innerHTML = `
+    <div style="margin-top:10px; padding:10px; background:#141b2d; border-radius:6px;">
+        <div style="font-size:14px; color:#22d3ee; margin-bottom:8px;">⚡ Oranlar</div>
+        ${o.length ? o.slice(0,3).map(bet => `<div><b>${bet.name}</b>: ${bet.values.map(v=>`${v.value} (${v.odd})`).join(" — ")}</div>`).join("") : "Oran bulunamadı."}
+    </div>
+    <div style="margin-top:10px; padding:10px; background:#1e293b; border-radius:6px;">
+        <div style="font-size:14px; color:#c084fc; margin-bottom:8px;">🤖 AI Tahmin</div>
+        ${p ? `Tahmin: <b>${p.winner?.name ?? "—"}</b><br> Güven: ${p.percent?.home ?? 0}% - ${p.percent?.draw ?? 0}% - ${p.percent?.away ?? 0}%<br> Analiz: ${p.advice ?? "—"}` : "Tahmin bulunamadı."}
+    </div>`;
+}
+getToday();
+</script>
+</body>
+</html>
