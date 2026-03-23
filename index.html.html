@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OranAI — Spor Oran Analizi</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Manrope:wght@300;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0e1318;
+    --surface2: #141b22;
+    --border: #1e2a35;
+    --accent-green: #00e676;
+    --accent-yellow: #ffd600;
+    --accent-red: #ff3d57;
+    --accent-blue: #29b6f6;
+    --text: #e8f0f7;
+    --muted: #5a7285;
+    --football: #00e676;
+    --basketball: #ff7043;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,230,118,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,230,118,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,12,16,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 3px;
+    color: var(--accent-green);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo span {
+    color: var(--text);
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    color: var(--muted);
+    border: none;
+    background: transparent;
+  }
+
+  .nav-tab.active {
+    background: var(--accent-green);
+    color: #000;
+  }
+
+  .nav-tab:hover:not(.active) {
+    color: var(--text);
+    background: var(--border);
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,61,87,0.15);
+    border: 1px solid rgba(255,61,87,0.3);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-red);
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-red);
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+  }
+
+  /* HERO STATS */
+  .hero {
+    padding: 32px 32px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 6vw, 72px);
+    line-height: 0.95;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .hero-title span {
+    color: var(--accent-green);
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.5s ease backwards;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-green);
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-green);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+    transform-origin: left;
+  }
+
+  .stat-card:hover::after { transform: scaleX(1); }
+
+  .stat-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .stat-change {
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .up { color: var(--accent-green); }
+  .down { color: var(--accent-red); }
+  .neutral { color: var(--muted); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card:nth-child(1) { animation-delay: 0.1s; }
+  .stat-card:nth-child(2) { animation-delay: 0.2s; }
+  .stat-card:nth-child(3) { animation-delay: 0.3s; }
+  .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+  /* MAIN LAYOUT */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    padding: 0 32px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* SECTION */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sport-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .tag-football {
+    background: rgba(0,230,118,0.15);
+    color: var(--football);
+    border: 1px solid rgba(0,230,118,0.3);
+  }
+
+  .tag-basketball {
+    background: rgba(255,112,67,0.15);
+    color: var(--basketball);
+    border: 1px solid rgba(255,112,67,0.3);
+  }
+
+  .view-all {
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .view-all:hover { color: var(--accent-green); }
+
+  /* MATCH CARDS */
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+    animation: fadeUp 0.5s ease backwards;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .match-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--football);
+    border-radius: 3px 0 0 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .match-card.basketball::before { background: var(--basketball); }
+
+  .match-card:hover {
+    border-color: rgba(0,230,118,0.3);
+    background: var(--surface2);
+  }
+
+  .match-card:hover::before { opacity: 1; }
+
+  .match-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .match-league {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .match-time {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .match-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .team {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .team.right { text-align: right; align-items: flex-end; }
+
+  .team-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .team-form {
+    display: flex;
+    gap: 3px;
+  }
+
+  .team.right .team-form { justify-content: flex-end; }
+
+  .form-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .form-w { background: var(--accent-green); }
+  .form-d { background: var(--accent-yellow); }
+  .form-l { background: var(--accent-red); }
+
+  .vs {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .odds-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .odd-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .odd-btn:hover {
+    border-color: var(--accent-green);
+    background: rgba(0,230,118,0.08);
+  }
+
+  .odd-btn.hot {
+    border-color: rgba(255,214,0,0.4);
+    background: rgba(255,214,0,0.05);
+  }
+
+  .odd-label {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+  }
+
+  .odd-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  .odd-btn.hot .odd-value { color: var(--accent-yellow); }
+
+  .odd-change {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 1px;
+  }
+
+  .value-bar {
+    margin-top: 12px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .value-fill {
+    height: 100%;
+    border-radius: 2px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transition: width 1s ease;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+  }
+
+  .value-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* SIDEBAR */
+  .sidebar > * + * { margin-top: 16px; }
+
+  .sidebar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    animation: fadeUp 0.6s ease backwards;
+  }
+
+  /* TREND CHART */
+  .mini-chart {
+    height: 80px;
+    position: relative;
+    margin: 12px 0 8px;
+  }
+
+  .chart-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* HISTORY TABLE */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .history-table th {
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .history-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid rgba(30,42,53,0.5);
+    font-size: 12px;
+    vertical-align: middle;
+  }
+
+  .history-table tr:last-child td { border-bottom: none; }
+
+  .history-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .result-badge {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 22px;
+  }
+
+  .badge-w { background: rgba(0,230,118,0.2); color: var(--accent-green); }
+  .badge-l { background: rgba(255,61,87,0.2); color: var(--accent-red); }
+  .badge-d { background: rgba(255,214,0,0.2); color: var(--accent-yellow); }
+
+  .profit-positive { color: var(--accent-green); font-family: 'DM Mono', monospace; }
+  .profit-negative { color: var(--accent-red); font-family: 'DM Mono', monospace; }
+
+  /* FILTER TABS */
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-tab {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .filter-tab:hover, .filter-tab.active {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    background: rgba(0,230,118,0.08);
+  }
+
+  /* ROI METER */
+  .roi-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 12px;
+  }
+
+  .roi-svg { transform: rotate(-90deg); }
+
+  .roi-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    color: var(--accent-green);
+    line-height: 1;
+  }
+
+  .roi-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* SCROLL BAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .sidebar > * + * { margin-top: 0; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .hero, .main-grid { padding-left: 16px; padding-right: 16px; }
+    .sidebar { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .nav-tabs { display: none; }
+  }
+
+  /* TOOLTIP */
+  .tooltip-wrap { position: relative; display: inline-block; }
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 10;
+  }
+  .tooltip-wrap:hover .tooltip { opacity: 1; }
+
+  /* ANIMATE IN */
+  .match-card:nth-child(1) { animation-delay: 0.1s; }
+  .match-card:nth-child(2) { animation-delay: 0.2s; }
+  .match-card:nth-child(3) { animation-delay: 0.3s; }
+  .match-card:nth-child(4) { animation-delay: 0.4s; }
+  .match-card:nth-child(5) { animation-delay: 0.5s; }
+  .sidebar-card:nth-child(1) { animation-delay: 0.2s; }
+  .sidebar-card:nth-child(2) { animation-delay: 0.35s; }
+  .sidebar-card:nth-child(3) { animation-delay: 0.5s; }
+
+  .section-divider {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    padding: 12px 0 8px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ORAN<span>AI</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab(this,'all')">Tümü</button>
+    <button class="nav-tab" onclick="switchTab(this,'football')">⚽ Futbol</button>
+    <button class="nav-tab" onclick="switchTab(this,'basketball')">🏀 Basketbol</button>
+    <button class="nav-tab" onclick="switchTab(this,'history')">Geçmiş</button>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div> 14 CANLI</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-title">ORAN<br><span>ANALİZİ</span></div>
+  <div class="hero-sub">// SPOR BAHİS VERİ MERKEZİ — 23.03.2026</div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Bugünkü Maçlar</div>
+      <div class="stat-value" style="color:var(--accent-green)">38</div>
+      <div class="stat-change up">↑ 12 futbol · 8 basketbol</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ort. Oran Değeri</div>
+      <div class="stat-value" style="color:var(--accent-yellow)">1.87</div>
+      <div class="stat-change up">↑ +0.12 dünden</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">7 Günlük ROI</div>
+      <div class="stat-value" style="color:var(--accent-blue)">+14.3%</div>
+      <div class="stat-change up">↑ +2.1% önceki hafta</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tahmin Doğruluğu</div>
+      <div class="stat-value">67%</div>
+      <div class="stat-change neutral">→ 128 tahmin / son 30 gün</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-grid">
+  <div class="left-col">
+
+    <!-- FILTER TABS -->
+    <div class="filter-tabs">
+      <button class="filter-tab active">Tümü</button>
+      <button class="filter-tab">Süper Lig</button>
+      <button class="filter-tab">Champions League</button>
+      <button class="filter-tab">NBA</button>
+      <button class="filter-tab">EuroLeague</button>
+      <button class="filter-tab">La Liga</button>
+      <button class="filter-tab">Serie A</button>
+    </div>
+
+    <!-- FOOTBALL SECTION -->
+    <div class="section-header">
+      <div class="section-title">
+        ⚽ FUTBOL
+        <span class="sport-tag tag-football">YÜKSEK DEĞER</span>
+      </div>
+      <button class="view-all">tümünü gör →</button>
+    </div>
+
+    <!-- Match 1 -->
+    <div class="match-card" onclick="toggleCard(this)">
+      <div class="match-top">
+        <span class="match-league">🏆 Süper Lig</span>
+        <span class="match-time">19:00 · Bugün</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">Galatasaray</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team right">
+          <div class="team-name">Fenerbahçe</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">İstatistik: %42 ev galibiyet</div>
+          <div class="odd-label">1 — EV</div>
+          <div class="odd-value">2.15</div>
+          <div class="odd-change up">↑ +0.10</div>
+        </div>
+        <div class="odd-btn hot tooltip-wrap">
+          <div class="tooltip">🔥 Değer Var! Beklenen: 3.60</div>
+          <div class="odd-label">X — BERABERLİK</div>
+          <div class="odd-value">3.20</div>
+          <div class="odd-change up">↑ +0.30</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">İstatistik: %31 deplasman galibiyet</div>
+          <div class="odd-label">2 — DEP</div>
+          <div class="odd-value">3.40</div>
+          <div class="odd-change down">↓ -0.05</div>
+        </div>
+      </div>
+      <div class="value-bar"><div class="value-fill" style="width:74%"></div></div>
+      <div class="value-label"><span>Değer Skoru</span><span style="color:var(--accent-green)">74/100</span></div>
+    </div>
+
+    <!-- Match 2 -->
+    <div class="match-card" onclick="toggleCard(this)">
+      <div class="match-top">
+        <span class="match-league">🌍 Champions League</span>
+        <span class="match-time">21:00 · Bugün</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">Real Madrid</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team right">
+          <div class="team-name">Manchester City</div>
+          <div class="team-form">
+            <div class="form-dot form-d"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-btn hot tooltip-wrap">
+          <div class="tooltip">🔥 Değer Var! Beklenen: 1.75</div>
+          <div class="odd-label">1 — EV</div>
+          <div class="odd-value">2.05</div>
+          <div class="odd-change up">↑ +0.15</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">Son 10 karşılaşmada 3 beraberlik</div>
+          <div class="odd-label">X — BERABERLİK</div>
+          <div class="odd-value">3.50</div>
+          <div class="odd-change neutral">→ sabit</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">İstatistik: %35 deplasman galibiyet</div>
+          <div class="odd-label">2 — DEP</div>
+          <div class="odd-value">3.65</div>
+          <div class="odd-change down">↓ -0.10</div>
+        </div>
+      </div>
+      <div class="value-bar"><div class="value-fill" style="width:88%"></div></div>
+      <div class="value-label"><span>Değer Skoru</span><span style="color:var(--accent-green)">88/100</span></div>
+    </div>
+
+    <!-- Match 3 -->
+    <div class="match-card" onclick="toggleCard(this)">
+      <div class="match-top">
+        <span class="match-league">🇪🇸 La Liga</span>
+        <span class="match-time">22:30 · Bugün</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">Barcelona</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team right">
+          <div class="team-name">Atletico Madrid</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-d"></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-btn">
+          <div class="odd-label">1 — EV</div>
+          <div class="odd-value">1.75</div>
+          <div class="odd-change down">↓ -0.08</div>
+        </div>
+        <div class="odd-btn">
+          <div class="odd-label">X — BERABERLİK</div>
+          <div class="odd-value">3.80</div>
+          <div class="odd-change neutral">→ sabit</div>
+        </div>
+        <div class="odd-btn hot tooltip-wrap">
+          <div class="tooltip">🔥 Atletico son 5 deplasmanda 4 galibiyet</div>
+          <div class="odd-label">2 — DEP</div>
+          <div class="odd-value">4.60</div>
+          <div class="odd-change up">↑ +0.40</div>
+        </div>
+      </div>
+      <div class="value-bar"><div class="value-fill" style="width:61%"></div></div>
+      <div class="value-label"><span>Değer Skoru</span><span style="color:var(--accent-yellow)">61/100</span></div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="section-divider">🏀 BASKETBOL</div>
+
+    <!-- BASKETBALL SECTION HEADER -->
+    <div class="section-header">
+      <div class="section-title">
+        NBA & EUROLEAGUE
+        <span class="sport-tag tag-basketball">HOT PICKS</span>
+      </div>
+      <button class="view-all">tümünü gör →</button>
+    </div>
+
+    <!-- Basketball Match 1 -->
+    <div class="match-card basketball" onclick="toggleCard(this)">
+      <div class="match-top">
+        <span class="match-league">🏀 NBA</span>
+        <span class="match-time">02:30 · 24.03</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">Boston Celtics</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team right">
+          <div class="team-name">Miami Heat</div>
+          <div class="team-form">
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-btn hot tooltip-wrap">
+          <div class="tooltip">🔥 Celtics son 8 ev maçında 7 galibiyet</div>
+          <div class="odd-label">EV GALİBİYET</div>
+          <div class="odd-value">1.55</div>
+          <div class="odd-change down">↓ -0.05</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">Handikap: Celtics -5.5</div>
+          <div class="odd-label">HANDİKAP</div>
+          <div class="odd-value">1.90</div>
+          <div class="odd-change neutral">→ sabit</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">Toplam sayı: 218.5 üst/alt</div>
+          <div class="odd-label">ÜST 218.5</div>
+          <div class="odd-value">1.85</div>
+          <div class="odd-change up">↑ +0.10</div>
+        </div>
+      </div>
+      <div class="value-bar"><div class="value-fill" style="width:79%; background: linear-gradient(90deg, var(--basketball), var(--accent-yellow))"></div></div>
+      <div class="value-label"><span>Değer Skoru</span><span style="color:var(--basketball)">79/100</span></div>
+    </div>
+
+    <!-- Basketball Match 2 -->
+    <div class="match-card basketball" onclick="toggleCard(this)">
+      <div class="match-top">
+        <span class="match-league">🏆 EuroLeague</span>
+        <span class="match-time">20:00 · Bugün</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">Anadolu Efes</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-d"></div>
+          </div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team right">
+          <div class="team-name">CSKA Moskova</div>
+          <div class="team-form">
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-l"></div>
+            <div class="form-dot form-w"></div>
+            <div class="form-dot form-w"></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">Ev avantajı güçlü - %58 ev galibiyet</div>
+          <div class="odd-label">EV GALİBİYET</div>
+          <div class="odd-value">1.80</div>
+          <div class="odd-change up">↑ +0.05</div>
+        </div>
+        <div class="odd-btn hot tooltip-wrap">
+          <div class="tooltip">🔥 Değer Var! CSKA son deplasmanda zayıf</div>
+          <div class="odd-label">DEP GALİBİYET</div>
+          <div class="odd-value">2.20</div>
+          <div class="odd-change up">↑ +0.25</div>
+        </div>
+        <div class="odd-btn tooltip-wrap">
+          <div class="tooltip">Toplam sayı: 164.5 üst/alt</div>
+          <div class="odd-label">ALT 164.5</div>
+          <div class="odd-value">1.92</div>
+          <div class="odd-change down">↓ -0.08</div>
+        </div>
+      </div>
+      <div class="value-bar"><div class="value-fill" style="width:65%; background: linear-gradient(90deg, var(--basketball), var(--accent-yellow))"></div></div>
+      <div class="value-label"><span>Değer Skoru</span><span style="color:var(--basketball)">65/100</span></div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- ROI CARD -->
+    <div class="sidebar-card" style="text-align:center">
+      <div class="section-title" style="justify-content:center; margin-bottom:14px">PERFORMANS</div>
+      <div class="roi-circle">
+        <svg class="roi-svg" viewBox="0 0 100 100" width="100" height="100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" stroke-width="8"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--accent-green)" stroke-width="8"
+            stroke-dasharray="264" stroke-dashoffset="95" stroke-linecap="round"/>
+        </svg>
+        <div class="roi-text">67%<div class="roi-sub">DOĞRULUK</div></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+          <div class="stat-label">GALİBİYET</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent-green)">86</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+          <div class="stat-label">KAYIP</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent-red)">42</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREND CHART -->
+    <div class="sidebar-card">
+      <div class="section-title" style="margin-bottom:4px">ORAN TRENDİ</div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:8px">Son 14 gün ortalama oran</div>
+      <div class="mini-chart">
+        <svg class="chart-svg" viewBox="0 0 280 80" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00e676" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Area fill -->
+          <path d="M0,55 L20,50 L40,45 L60,48 L80,38 L100,42 L120,35 L140,30 L160,25 L180,20 L200,15 L220,18 L240,12 L260,8 L280,5 L280,80 L0,80 Z"
+            fill="url(#areaGrad)"/>
+          <!-- Line -->
+          <path d="M0,55 L20,50 L40,45 L60,48 L80,38 L100,42 L120,35 L140,30 L160,25 L180,20 L200,15 L220,18 L240,12 L260,8 L280,5"
+            fill="none" stroke="var(--accent-green)" stroke-width="2" stroke-linejoin="round"/>
+          <!-- Dots -->
+          <circle cx="280" cy="5" r="4" fill="var(--accent-green)"/>
+          <circle cx="0" cy="55" r="3" fill="var(--muted)"/>
+        </svg>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted)">
+        <span>8 Mar</span>
+        <span style="color:var(--accent-green)">+12.8% artış</span>
+        <span>Bugün</span>
+      </div>
+    </div>
+
+    <!-- HISTORY TABLE -->
+    <div class="sidebar-card">
+      <div class="section-header">
+        <div class="section-title">GEÇMİŞ TAHMİNLER</div>
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Maç</th>
+            <th>Oran</th>
+            <th>Sonuç</th>
+            <th>Kâr</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-size:11px">GS — FB</td>
+            <td><span style="font-family:'DM Mono',monospace">2.10</span></td>
+            <td><span class="result-badge badge-w">G</span></td>
+            <td class="profit-positive">+1.10</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">RM — BVB</td>
+            <td><span style="font-family:'DM Mono',monospace">1.85</span></td>
+            <td><span class="result-badge badge-w">G</span></td>
+            <td class="profit-positive">+0.85</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">Lakers — Warriors</td>
+            <td><span style="font-family:'DM Mono',monospace">2.40</span></td>
+            <td><span class="result-badge badge-l">K</span></td>
+            <td class="profit-negative">-1.00</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">LIV — MCI</td>
+            <td><span style="font-family:'DM Mono',monospace">3.20</span></td>
+            <td><span class="result-badge badge-w">G</span></td>
+            <td class="profit-positive">+2.20</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">Efes — BAR</td>
+            <td><span style="font-family:'DM Mono',monospace">1.95</span></td>
+            <td><span class="result-badge badge-d">B</span></td>
+            <td class="profit-negative">-1.00</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">BJK — TRA</td>
+            <td><span style="font-family:'DM Mono',monospace">1.70</span></td>
+            <td><span class="result-badge badge-w">G</span></td>
+            <td class="profit-positive">+0.70</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px">Celtics — BKN</td>
+            <td><span style="font-family:'DM Mono',monospace">1.60</span></td>
+            <td><span class="result-badge badge-w">G</span></td>
+            <td class="profit-positive">+0.60</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace">
+        <span style="color:var(--muted)">NET KÂR (7G)</span>
+        <span style="color:var(--accent-green);font-weight:700">+4.45 ₺</span>
+      </div>
+    </div>
+
+    <!-- VALUE ALERT -->
+    <div class="sidebar-card" style="border-color:rgba(255,214,0,0.3);background:rgba(255,214,0,0.03)">
+      <div class="section-title" style="color:var(--accent-yellow)">⚡ DEĞER ALARMI</div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:11px;font-weight:700">Real Madrid 1</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Beklenen: 1.75 · Mevcut: 2.05</div>
+          <div style="font-size:10px;color:var(--accent-green);margin-top:4px;font-weight:600">+17.1% değer fazlası</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:11px;font-weight:700">GS-FB Beraberlik</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Beklenen: 2.90 · Mevcut: 3.20</div>
+          <div style="font-size:10px;color:var(--accent-green);margin-top:4px;font-weight:600">+10.3% değer fazlası</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:11px;font-weight:700">Atletico Deplasman</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Beklenen: 3.90 · Mevcut: 4.60</div>
+          <div style="font-size:10px;color:var(--accent-green);margin-top:4px;font-weight:600">+17.9% değer fazlası</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function switchTab(el, type) {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function toggleCard(card) {
+    card.style.background = card.style.background === 'var(--surface2)' ? '' : 'var(--surface2)';
+  }
+
+  // Filter tabs
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Animate value bars on load
+  window.addEventListener('load', () => {
+    document.querySelectorAll('.value-fill').forEach(bar => {
+      const target = bar.style.width;
+      bar.style.width = '0%';
+      setTimeout(() => { bar.style.width = target; }, 300);
+    });
+  });
+
+  // Live counter animation
+  let count = 14;
+  setInterval(() => {
+    count = Math.floor(Math.random() * 6) + 12;
+    document.querySelector('.live-badge').innerHTML =
+      `<div class="live-dot"></div> ${count} CANLI`;
+  }, 5000);
+</script>
+</body>
+</html>
