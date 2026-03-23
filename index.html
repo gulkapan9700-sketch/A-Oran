@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKORER — Spor Analiz Platformu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#040710;--ink2:#070b16;--panel:#0f1520;--panel2:#141d2e;
+  --line:#1c2b3e;--line2:#263650;
+  --gold:#c9a84c;--gold2:#e8c96a;--teal:#2dd4bf;
+  --red:#ef4444;--green:#22c55e;
+  --slate:#94a3b8;--fog:#64748b;--text:#e2e8f0;--dim:#475569;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.006) 2px,rgba(255,255,255,.006) 4px);pointer-events:none;z-index:0}
+.glow{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
+.g1{width:900px;height:600px;background:rgba(201,168,76,.04);top:-200px;left:-300px}
+.g2{width:700px;height:700px;background:rgba(45,212,191,.03);bottom:-300px;right:-200px}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:200;background:rgba(4,7,16,.97);backdrop-filter:blur(24px);border-bottom:1px solid var(--line);height:56px;display:flex;align-items:center;padding:0 24px}
+.brand{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-right:28px;cursor:pointer}
+.nav{display:flex;gap:1px;flex:1}
+.nv{padding:5px 12px;border-radius:5px;font-size:12px;font-weight:500;color:var(--fog);cursor:pointer;border:none;background:transparent;transition:all .2s;white-space:nowrap}
+.nv:hover{color:var(--text);background:var(--panel)}
+.nv.on{color:var(--gold);background:rgba(201,168,76,.08)}
+.hdr-r{display:flex;align-items:center;gap:8px;margin-left:auto}
+.live-chip{display:flex;align-items:center;gap:5px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);padding:4px 11px;border-radius:20px;font-size:10px;font-weight:700;color:var(--red);font-family:'Space Mono',monospace;letter-spacing:.5px;cursor:pointer}
+.rdot{width:5px;height:5px;background:var(--red);border-radius:50%;animation:pls .9s infinite}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.2}}
+.rbtn{background:transparent;border:1px solid var(--line2);color:var(--fog);padding:4px 11px;border-radius:5px;font-size:10px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s}
+.rbtn:hover{border-color:var(--gold);color:var(--gold)}
+.rbtn.busy{opacity:.4;pointer-events:none}
+
+/* API DURUM */
+.api-status{position:fixed;bottom:16px;right:16px;z-index:999;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:10px;min-width:220px}
+.api-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0}
+.api-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.api-ok{background:var(--green)}
+.api-err{background:var(--red)}
+.api-wait{background:var(--gold);animation:pls 1s infinite}
+.api-close{position:absolute;top:6px;right:8px;cursor:pointer;color:var(--fog);font-size:12px;background:none;border:none;color:var(--fog)}
+
+/* PAGE */
+.page{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:0 20px 80px}
+
+/* MASTHEAD */
+.masthead{padding:28px 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:16px}
+.mast-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.mast-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,52px);font-weight:900;line-height:.95;letter-spacing:-1px}
+.mast-title em{font-style:italic;color:var(--gold)}
+.mast-sub{font-size:11px;color:var(--fog);font-family:'Space Mono',monospace;margin-top:8px;letter-spacing:.4px}
+.mast-info{text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-family:'Space Mono',monospace}
+.mast-date{font-size:14px;font-weight:700;color:var(--text);font-family:'Playfair Display',serif}
+.mast-time{font-size:10px;color:var(--fog);margin-top:2px}
+.mast-upd{font-size:9px;color:var(--teal);margin-top:2px}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:20px}
+.kc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;transition:all .2s;position:relative;overflow:hidden}
+.kc:hover{border-color:var(--line2)}
+.kc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transition:transform .3s;transform-origin:left}
+.kc:hover::after{transform:scaleX(1)}
+.kl{font-size:8px;font-family:'Space Mono',monospace;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.kv{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1}
+.ks{font-size:9px;color:var(--fog);margin-top:2px}
+.ks.g{color:var(--green)}.ks.r{color:var(--red)}.ks.y{color:var(--gold)}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:1fr 340px;gap:16px}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.pill{padding:4px 11px;border-radius:20px;font-size:10px;font-family:'Space Mono',monospace;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fog);transition:all .15s;letter-spacing:.3px}
+.pill:hover,.pill.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.ctl-sep{width:1px;height:16px;background:var(--line);margin:0 3px}
+.ctl-lbl{font-size:9px;font-family:'Space Mono',monospace;color:var(--dim)}
+.ctl-sel{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:10px;font-family:'Space Mono',monospace;padding:3px 8px;border-radius:5px;cursor:pointer}
+
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:5px 13px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--fog);transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.on{background:var(--line2);color:var(--text)}
+
+/* SEC LABEL */
+.sec-label{display:flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:12px 0 8px;border-top:1px solid var(--line);margin-top:14px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.sec-label:first-child{border-top:none;margin-top:0;padding-top:0}
+.sbadge{font-size:8px;padding:2px 6px;border-radius:3px;font-family:'Space Mono',monospace}
+.sb-g{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.sb-r{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);animation:pls 1.5s infinite}
+.sb-y{background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.2)}
+.sb-t{background:rgba(45,212,191,.1);color:var(--teal);border:1px solid rgba(45,212,191,.2)}
+
+/* MATCH CARD */
+.mc{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;animation:sli .35s ease backwards}
+.mc-bar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;opacity:0;transition:opacity .2s}
+.mc:hover{border-color:var(--line2);background:var(--panel2)}
+.mc:hover .mc-bar{opacity:1}
+.mc.lv .mc-bar{opacity:1}
+@keyframes sli{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.mc-lg{font-size:9px;font-family:'Space Mono',monospace;color:var(--fog);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:4px}
+.mc-st{font-size:9px;font-family:'Space Mono',monospace;color:var(--fog);background:var(--panel2);border:1px solid var(--line);padding:2px 7px;border-radius:4px}
+.mc-st.lv{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.07);animation:pls 1.5s infinite}
+.mc-st.fi{color:var(--dim)}
+
+.mc-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:11px}
+.team{display:flex;flex-direction:column;gap:2px}
+.team.r{text-align:right;align-items:flex-end}
+.tn{font-size:14px;font-weight:600;line-height:1.2}
+.ts{font-size:8px;color:var(--dim);font-family:'Space Mono',monospace}
+
+.mc-ctr{text-align:center;min-width:52px}
+.vs-l{font-family:'Playfair Display',serif;font-size:13px;color:var(--dim);font-style:italic}
+.ko-t{font-size:11px;font-weight:700;color:var(--text);font-family:'Space Mono',monospace;margin-top:1px}
+.lsco{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--teal);letter-spacing:2px;line-height:1}
+.lmin{font-size:8px;color:var(--red);font-family:'Space Mono',monospace}
+
+/* ODDS */
+.odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.od{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 8px;text-align:center;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.od:hover{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.04)}
+.od.hot{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.04)}
+.od.val{border-color:rgba(45,212,191,.35);background:rgba(45,212,191,.04)}
+.od-l{font-size:8px;font-family:'Space Mono',monospace;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:2px}
+.od-v{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--text)}
+.od.hot .od-v{color:var(--gold)}
+.od.val .od-v{color:var(--teal)}
+.od-p{font-size:8px;color:var(--dim);font-family:'Space Mono',monospace;margin-top:1px}
+.vchip{position:absolute;top:-1px;right:-1px;background:var(--gold);color:#000;font-size:7px;font-weight:700;padding:1px 4px;font-family:'Space Mono',monospace;border-radius:0 7px 0 4px}
+
+/* MARKETS */
+.mkts{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.mkt{font-size:9px;font-family:'Space Mono',monospace;color:var(--fog);background:var(--panel2);border:1px solid var(--line);padding:2px 7px;border-radius:4px}
+.mkt b{color:var(--text)}
+
+/* AI ROW */
+.ai-row{display:flex;align-items:center;gap:7px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
+.ai-lbl{font-size:8px;font-family:'Space Mono',monospace;color:var(--dim);letter-spacing:1px}
+.ai-pick{font-size:10px;font-weight:600;color:var(--teal);background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);padding:2px 7px;border-radius:4px}
+.ai-pct{margin-left:auto;font-size:8px;font-family:'Space Mono',monospace;color:var(--fog)}
+
+/* VALUE BAR */
+.vbar{margin-top:10px}
+.vbar-t{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.vbar-f{height:100%;border-radius:2px;transition:width 1.3s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--gold),var(--teal))}
+.vbar-ft{display:flex;justify-content:space-between;font-size:8px;font-family:'Space Mono',monospace;color:var(--dim);margin-top:3px}
+
+/* LOADER */
+.ldr{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:40px;text-align:center;margin-bottom:8px}
+.spin{width:26px;height:26px;border:2px solid var(--line2);border-top-color:var(--gold);border-radius:50%;animation:rot .75s linear infinite;margin:0 auto 10px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.ltxt{font-family:'Space Mono',monospace;font-size:10px;color:var(--fog);letter-spacing:1px}
+.err{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.18);border-radius:11px;padding:14px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--red);margin-bottom:8px}
+
+/* DEMO BANNER */
+.demo-banner{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--gold);display:flex;align-items:center;gap:8px}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:13px}
+.sc{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px}
+.sc-t{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:7px}
+.coupon-panel{border-color:rgba(201,168,76,.2);background:linear-gradient(145deg,rgba(201,168,76,.025),transparent)}
+.cp-tabs{display:flex;gap:4px;margin-bottom:10px}
+.cpt{flex:1;padding:5px;border-radius:5px;font-size:9px;font-family:'Space Mono',monospace;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fog);transition:all .15s;text-align:center}
+.cpt.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.gbtn{width:100%;padding:11px;background:linear-gradient(135deg,#c9a84c,#8b6914);border:none;border-radius:8px;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:11px;letter-spacing:.5px}
+.gbtn:hover{opacity:.9;transform:translateY(-1px)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.ci{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:6px;animation:sli .4s ease backwards}
+.ci-m{font-size:11px;font-weight:600;margin-bottom:3px}
+.ci-r{display:flex;justify-content:space-between;align-items:center}
+.ci-lbl{font-size:9px;color:var(--fog);font-family:'Space Mono',monospace}
+.ci-pk{font-size:10px;font-weight:600;color:var(--text);margin-top:1px}
+.ci-od{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--gold)}
+.ci-w{font-size:9px;color:var(--fog);margin-top:3px;line-height:1.4}
+.ci-b{display:flex;align-items:center;gap:4px;margin-top:4px}
+.ci-tr{flex:1;height:2px;background:var(--line);border-radius:1px;overflow:hidden}
+.ci-fl{height:100%;border-radius:1px;background:linear-gradient(90deg,var(--gold),var(--teal))}
+.ci-pc{font-size:8px;font-family:'Space Mono',monospace;color:var(--gold)}
+.tot{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(45,212,191,.04));border:1px solid rgba(201,168,76,.2);border-radius:7px;padding:10px 12px;margin-top:8px}
+.tot-l{font-size:9px;color:var(--fog);font-family:'Space Mono',monospace}
+.tot-r{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--gold)}
+
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:11px}
+.s-row:last-child{border-bottom:none}
+.s-k{font-size:9px;font-family:'Space Mono',monospace;color:var(--dim);letter-spacing:.5px}
+.s-v{font-weight:600;font-family:'Playfair Display',serif;font-size:14px}
+.lg-r{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:11px}
+.lg-r:last-child{border-bottom:none}
+.lg-n{font-weight:500;font-size:11px}
+.lg-c{font-family:'Space Mono',monospace;font-size:9px;color:var(--fog);background:var(--panel2);padding:1px 5px;border-radius:3px}
+.up-r{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:6px}
+.up-lg{font-size:8px;color:var(--fog);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase}
+.up-t{font-size:12px;font-weight:600;margin:2px 0;line-height:1.3}
+.up-h{font-size:10px;color:var(--gold);font-family:'Space Mono',monospace}
+.hi-r{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.hi-r:last-child{border-bottom:none}
+.hb{width:20px;height:20px;border-radius:4px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hw{background:rgba(34,197,94,.15);color:var(--green)}.hl{background:rgba(239,68,68,.15);color:var(--red)}.hp{background:rgba(201,168,76,.15);color:var(--gold)}
+.hi{flex:1}.hm{font-size:10px;font-weight:500}.hd{font-size:8px;color:var(--fog);font-family:'Space Mono',monospace}
+.hodd{font-family:'Playfair Display',serif;font-size:13px;font-weight:700}
+
+@media(max-width:1200px){.grid{grid-template-columns:1fr}.kpi-strip{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){header{padding:0 12px}.page{padding:0 10px 60px}.kpi-strip{grid-template-columns:repeat(2,1fr)}.nav{display:none}.masthead{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="brand" onclick="setTab('all')">SKORER</div>
+  <nav class="nav">
+    <button class="nv on"  onclick="setTab('all',this)">Dashboard</button>
+    <button class="nv"     onclick="setTab('live',this)">🔴 Canlı</button>
+    <button class="nv"     onclick="setTab('ns',this)">⏳ Başlamadı</button>
+    <button class="nv"     onclick="setTab('ft',this)">✅ Bitti</button>
+    <button class="nv"     onclick="setTab('value',this)">★ Değer</button>
+    <button class="nv"     onclick="setTab('tr',this)">🇹🇷 Türkiye</button>
+    <button class="nv"     onclick="setTab('ucl',this)">🏆 Avrupa</button>
+    <button class="nv"     onclick="setTab('bb',this)">🏀 Basketbol</button>
+  </nav>
+  <div class="hdr-r">
+    <div class="live-chip"><div class="rdot"></div><span id="liveCnt">0</span> CANLI</div>
+    <button class="rbtn" id="rfBtn" onclick="loadAll()">↻ Yenile</button>
+  </div>
+</header>
+
+<!-- API DURUM PANELİ -->
+<div class="api-status" id="apiStatus">
+  <button class="api-close" onclick="document.getElementById('apiStatus').style.display='none'">✕</button>
+  <div style="font-size:9px;color:var(--fog);letter-spacing:1px;margin-bottom:6px">API DURUM</div>
+  <div class="api-row"><span>Futbol API</span><div class="api-dot api-wait" id="dotFB"></div></div>
+  <div class="api-row"><span>Basketbol API</span><div class="api-dot api-wait" id="dotBB"></div></div>
+  <div class="api-row"><span>Oranlar</span><div class="api-dot api-wait" id="dotOD"></div></div>
+  <div style="font-size:9px;color:var(--dim);margin-top:6px" id="apiMsg">Bağlanıyor...</div>
+</div>
+
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div>
+      <div class="mast-eyebrow">Spor Analiz — Reklamsız</div>
+      <div class="mast-title">Günlük Maç<br><em>Analizi</em></div>
+      <div class="mast-sub">Tüm ligler · Canlı sonuçlar · Başlamamış maçlar · AI kupon</div>
+    </div>
+    <div class="mast-info">
+      <div class="mast-date" id="mDate">—</div>
+      <div class="mast-time" id="mTime">—</div>
+      <div class="mast-upd" id="mUpd">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-strip">
+    <div class="kc"><div class="kl">Toplam Maç</div><div class="kv" style="color:var(--gold)" id="kT">—</div><div class="ks" id="kS">—</div></div>
+    <div class="kc"><div class="kl">Başlamadı</div><div class="kv" style="color:var(--text)" id="kN">—</div><div class="ks y">Bugün oynanacak</div></div>
+    <div class="kc"><div class="kl">Canlı</div><div class="kv" style="color:var(--red)" id="kL">—</div><div class="ks r">Şu an oynanıyor</div></div>
+    <div class="kc"><div class="kl">Tamamlandı</div><div class="kv" style="color:var(--dim)" id="kF">—</div><div class="ks">Bugün bitti</div></div>
+    <div class="kc"><div class="kl">Aktif Lig</div><div class="kv" style="color:var(--teal)" id="kLG">—</div><div class="ks">Farklı lig</div></div>
+    <div class="kc"><div class="kl">Güncelleme</div><div class="kv" style="font-size:16px;font-family:'Space Mono',monospace" id="kTm">—</div><div class="ks g">Her 60 sn</div></div>
+  </div>
+
+  <div class="grid">
+    <div id="leftCol">
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab on" onclick="setSubTab('all',this)">Tümü</button>
+        <button class="tab" onclick="setSubTab('ns',this)">⏳ Başlamadı</button>
+        <button class="tab" onclick="setSubTab('live',this)">🔴 Canlı</button>
+        <button class="tab" onclick="setSubTab('ft',this)">✅ Bitti</button>
+        <button class="tab" onclick="setSubTab('value',this)">★ Yüksek Değer</button>
+        <button class="tab" onclick="setSubTab('tr',this)">🇹🇷 Türkiye</button>
+        <button class="tab" onclick="setSubTab('ucl',this)">🏆 Avrupa</button>
+        <button class="tab" onclick="setSubTab('bb',this)">🏀 Basketbol</button>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="controls">
+        <button class="pill on" onclick="setSport('all',this)">Tümü</button>
+        <button class="pill" onclick="setSport('fb',this)">⚽ Futbol</button>
+        <button class="pill" onclick="setSport('bb',this)">🏀 Basketbol</button>
+        <div class="ctl-sep"></div>
+        <span class="ctl-lbl">Sırala:</span>
+        <select class="ctl-sel" id="sortSel" onchange="doSort()">
+          <option value="time">Saat</option>
+          <option value="value">Değer</option>
+          <option value="league">Lig</option>
+        </select>
+      </div>
+
+      <!-- DEMO BANNER -->
+      <div class="demo-banner" id="demoBanner" style="display:none">
+        ⚠ API bağlantısı kurulamadı — Demo veriler gösteriliyor. API key limitini veya internet bağlantını kontrol et.
+      </div>
+
+      <!-- LIVE -->
+      <div id="secLive" style="display:none">
+        <div class="sec-label">Canlı Maçlar <span class="sbadge sb-r" id="lvBadge">0</span></div>
+        <div id="liveCards"></div>
+      </div>
+
+      <!-- MAIN -->
+      <div id="mainCards">
+        <div class="ldr"><div class="spin"></div><div class="ltxt">VERİLER YÜKLENİYOR...</div></div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- KUPON -->
+      <div class="sc coupon-panel">
+        <div class="sc-t">🎯 AI Kupon Üretici</div>
+        <div class="cp-tabs">
+          <button class="cpt on" onclick="setCt('banko',this)">🔒 Banko</button>
+          <button class="cpt" onclick="setCt('sistem',this)">⚙️ Sistem</button>
+          <button class="cpt" onclick="setCt('risk',this)">🔥 Riskli</button>
+        </div>
+        <button class="gbtn" id="genBtn" onclick="genCoupon()">✦ Kupon Oluştur</button>
+        <div id="couponArea">
+          <div style="text-align:center;padding:14px 0;opacity:.4;font-size:10px;color:var(--fog);font-family:'Space Mono',monospace;line-height:2">
+            Yapay zeka destekli<br>günlük kupon analizi
+          </div>
+        </div>
+      </div>
+
+      <!-- ÖZET -->
+      <div class="sc">
+        <div class="sc-t">📊 Bugün Özeti</div>
+        <div class="s-row"><span class="s-k">FUTBOL</span><span class="s-v" id="sF">—</span></div>
+        <div class="s-row"><span class="s-k">BASKETBOL</span><span class="s-v" id="sB">—</span></div>
+        <div class="s-row"><span class="s-k">BAŞLAMADI</span><span class="s-v" style="color:var(--gold)" id="sN">—</span></div>
+        <div class="s-row"><span class="s-k">CANLI</span><span class="s-v" style="color:var(--red)" id="sL">—</span></div>
+        <div class="s-row"><span class="s-k">TAMAMLANDI</span><span class="s-v" id="sFn">—</span></div>
+        <div class="s-row"><span class="s-k">YÜKSEK DEĞER</span><span class="s-v" style="color:var(--teal)" id="sV">—</span></div>
+      </div>
+
+      <!-- YAKLAŞAN -->
+      <div class="sc">
+        <div class="sc-t" style="color:var(--gold)">⏰ Yaklaşan Maçlar</div>
+        <div id="upArea"><div class="ltxt">Yükleniyor...</div></div>
+      </div>
+
+      <!-- LİGLER -->
+      <div class="sc">
+        <div class="sc-t">🏆 Aktif Ligler</div>
+        <div id="lgArea"><div class="ltxt">Yükleniyor...</div></div>
+      </div>
+
+      <!-- GEÇMİŞ -->
+      <div class="sc">
+        <div class="sc-t">📁 Kupon Geçmişi</div>
+        <div id="histArea"><div class="ltxt" style="font-size:9px">Henüz kupon yok</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// CONFIG — API-Football (api-sports.io) — doğru header
+// ================================================================
+const APIKEY = '53374d9fc1msh61a36a5c05e713dp13db9fjsn63d8d519f029';
+
+// api-sports.io doğrudan endpoint (RapidAPI ile aynı key ama farklı header)
+const FB_URL = 'https://v3.football.api-sports.io';
+const BB_URL = 'https://v1.basketball.api-sports.io';
+
+// İki farklı header kombinasyonu dene
+const HEADERS_SPORTS = { 'x-apisports-key': APIKEY };
+const HEADERS_RAPID  = {
+  'x-rapidapi-key':  APIKEY,
+  'x-rapidapi-host': 'v3.football.api-sports.io'
+};
+
+const TODAY = new Date().toISOString().split('T')[0];
+
+// League ID'leri
+const TR_IDS  = [203,204,205,206];
+const EU_IDS  = [2,3,848,4,5,6];
+const PRI_IDS = [203,39,140,135,78,61,2,3,848,4,5,197,88,144,262,307,71,103,94,106,119,113,128,169,179,218,235];
+
+// State
+let fbAll=[], bbAll=[], usingDemo=false;
+let couponType='banko', activeTab='all', activeSport='all', sortMode='time';
+let hist = JSON.parse(localStorage.getItem('skorer2_hist')||'[]');
+
+// ================================================================
+// UTILS
+// ================================================================
+const fmt  = d => d?new Date(d).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'—';
+const nowS = () => new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+const todS = () => new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+const isLv = s=>['1H','2H','HT','ET','BT','P'].includes(s?.short||s||'');
+const isFn = s=>['FT','AET','PEN','ABD','CANC','INT'].includes(s?.short||s||'');
+const isNS = s=>(s?.short||s||'')==='NS';
+
+function stLbl(s,d){
+  const sh=s?.short||s||'';
+  if(isLv(s)) return{t:`${s?.elapsed||''}'`,lv:true,fi:false};
+  if(isFn(s)) return{t:'BİTTİ',lv:false,fi:true};
+  if(sh==='NS') return{t:fmt(d),lv:false,fi:false};
+  if(sh==='PST') return{t:'ERTELENDİ',lv:false,fi:false};
+  return{t:sh,lv:false,fi:false};
+}
+
+function vScore(h,d,a){
+  if(!h||h==='—') return 38;
+  const fh=parseFloat(h),fd=parseFloat(d)||0,fa=parseFloat(a)||0;
+  const avg=(fh+fd+fa)/((d&&d!=='—'&&fd>0)?3:2);
+  return Math.min(96,Math.max(14,Math.round(avg*16)));
+}
+function vColor(v){return v>=75?'var(--teal)':v>=58?'var(--gold)':'var(--dim)';}
+function implP(o){const f=parseFloat(o);return f>0?Math.round(100/f)+'%':'';}
+
+// ================================================================
+// API FETCH — iki endpoint dene
+// ================================================================
+async function apiFetch(url, base=FB_URL){
+  // Önce x-apisports-key header'ı dene
+  try{
+    const r = await fetch(base+url, {headers: HEADERS_SPORTS});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if(d.errors && Object.keys(d.errors).length>0){
+      console.warn('API error:', d.errors);
+      return null; // null = hata var
+    }
+    return d.response || [];
+  } catch(e){
+    // RapidAPI header'ı dene
+    try{
+      const r2 = await fetch(base+url, {
+        headers:{
+          'x-rapidapi-key': APIKEY,
+          'x-rapidapi-host': base.replace('https://','')
+        }
+      });
+      const d2 = await r2.json();
+      return d2.response || [];
+    } catch(e2){
+      console.warn('Both API attempts failed:', url, e2);
+      return null;
+    }
+  }
+}
+
+async function fetchOdds(id){
+  try{
+    const r = await fetch(`${FB_URL}/odds?fixture=${id}&bookmaker=1`,{headers:HEADERS_SPORTS});
+    const d = await r.json();
+    const bets=d.response?.[0]?.bookmakers?.[0]?.bets||[];
+    const mw=bets.find(b=>b.name==='Match Winner');
+    const gg=bets.find(b=>b.name==='Both Teams Score');
+    const ou=bets.find(b=>b.name==='Goals Over/Under');
+    return{
+      home:mw?.values.find(v=>v.value==='Home')?.odd||'—',
+      draw:mw?.values.find(v=>v.value==='Draw')?.odd||'—',
+      away:mw?.values.find(v=>v.value==='Away')?.odd||'—',
+      gg:  gg?.values.find(v=>v.value==='Yes')?.odd||null,
+      over:ou?.values.find(v=>v.value==='Over 2.5')?.odd||null,
+    };
+  }catch(e){return{};}
+}
+
+async function fetchPred(id){
+  try{
+    const r=await fetch(`${FB_URL}/predictions?fixture=${id}`,{headers:HEADERS_SPORTS});
+    const d=await r.json();
+    return d.response?.[0]?.predictions||null;
+  }catch(e){return null;}
+}
+
+// ================================================================
+// DEMO DATA — API olmadığında göster
+// ================================================================
+function getDemoData(){
+  const leagues=[
+    {id:203,name:'Süper Lig',country:'Turkey'},
+    {id:39,name:'Premier League',country:'England'},
+    {id:140,name:'La Liga',country:'Spain'},
+    {id:135,name:'Serie A',country:'Italy'},
+    {id:78,name:'Bundesliga',country:'Germany'},
+    {id:61,name:'Ligue 1',country:'France'},
+    {id:2,name:'Champions League',country:'World'},
+    {id:3,name:'Europa League',country:'World'},
+    {id:88,name:'Eredivisie',country:'Netherlands'},
+    {id:94,name:'Primeira Liga',country:'Portugal'},
+    {id:197,name:'Super League',country:'Greece'},
+    {id:307,name:'Pro League',country:'Saudi Arabia'},
+  ];
+  const teams=[
+    ['Galatasaray','Fenerbahçe'],['Beşiktaş','Trabzonspor'],['Başakşehir','Alanyaspor'],
+    ['Man City','Arsenal'],['Liverpool','Chelsea'],['Man United','Tottenham'],
+    ['Real Madrid','Atletico Madrid'],['Barcelona','Sevilla'],['Villarreal','Real Betis'],
+    ['Juventus','AC Milan'],['Inter','Napoli'],['Roma','Lazio'],
+    ['Bayern Münih','Borussia Dortmund'],['Bayer Leverkusen','RB Leipzig'],
+    ['PSG','Olympique Lyon'],['Monaco','Marseille'],
+    ['Ajax','PSV'],['Benfica','Porto'],['Panathinaikos','Olympiakos'],
+    ['Al-Hilal','Al-Nassr'],
+  ];
+  const fixtures=[];
+  const baseHour=10;
+  teams.forEach(([h,a],i)=>{
+    const lg=leagues[i%leagues.length];
+    const hour=baseHour+Math.floor(i*1.2)%13;
+    const min=i%2===0?'00':'30';
+    const date=`${TODAY}T${String(hour).padStart(2,'0')}:${min}:00+03:00`;
+    const hodd=(1.4+Math.random()*2.5).toFixed(2);
+    const dodd=(2.8+Math.random()*1.5).toFixed(2);
+    const aodd=(2.5+Math.random()*3).toFixed(2);
+    fixtures.push({
+      fixture:{id:1000+i,date,status:{short:'NS',elapsed:null}},
+      league:lg,
+      teams:{home:{name:h,id:100+i},away:{name:a,id:200+i}},
+      goals:{home:null,away:null},
+      _odds:{home:hodd,draw:dodd,away:aodd,
+             over:(1.7+Math.random()).toFixed(2),
+             gg:(1.6+Math.random()).toFixed(2)},
+      _pred:i<6?{winner:{name:parseFloat(hodd)<parseFloat(aodd)?h:a},advice:'Form ve istatistik değerlendirmesi',percent:{home:String(35+Math.floor(Math.random()*25)),draw:String(20+Math.floor(Math.random()*15)),away:String(20+Math.floor(Math.random()*25))}}:null,
+      _isDemo:true,
+    });
+  });
+  // Birkaç canlı maç ekle
+  fixtures[0].fixture.status={short:'2H',elapsed:67};
+  fixtures[0].goals={home:1,away:0};
+  fixtures[1].fixture.status={short:'1H',elapsed:34};
+  fixtures[1].goals={home:0,away:1};
+  // Birkaç bitmiş maç
+  fixtures[18].fixture.status={short:'FT',elapsed:90};
+  fixtures[18].goals={home:2,away:1};
+  fixtures[19].fixture.status={short:'FT',elapsed:90};
+  fixtures[19].goals={home:0,away:0};
+  return fixtures;
+}
+
+function getDemoBB(){
+  return[
+    {id:1,date:`${TODAY}T20:30:00`,status:{short:'NS'},league:{name:'NBA',country:'USA'},teams:{home:{name:'Boston Celtics'},away:{name:'Miami Heat'}},scores:{home:{total:null},away:{total:null}},_odds:{home:'1.55',away:'2.45'}},
+    {id:2,date:`${TODAY}T21:00:00`,status:{short:'NS'},league:{name:'NBA',country:'USA'},teams:{home:{name:'LA Lakers'},away:{name:'Golden State Warriors'}},scores:{home:{total:null},away:{total:null}},_odds:{home:'1.80',away:'2.05'}},
+    {id:3,date:`${TODAY}T22:00:00`,status:{short:'NS'},league:{name:'EuroLeague',country:'Europe'},teams:{home:{name:'Anadolu Efes'},away:{name:'Real Madrid Basket'}},scores:{home:{total:null},away:{total:null}},_odds:{home:'1.90',away:'1.95'}},
+    {id:4,date:`${TODAY}T20:00:00`,status:{short:'1H',elapsed:18},league:{name:'NBA',country:'USA'},teams:{home:{name:'Milwaukee Bucks'},away:{name:'Chicago Bulls'}},scores:{home:{total:48},away:{total:44}},_odds:{home:'1.45',away:'2.80'}},
+  ];
+}
+
+// ================================================================
+// LOAD ALL
+// ================================================================
+async function loadAll(){
+  const btn=document.getElementById('rfBtn');
+  btn.classList.add('busy');btn.textContent='↻...';
+  document.getElementById('mDate').textContent=todS();
+  document.getElementById('mTime').textContent=nowS();
+  document.getElementById('mUpd').textContent='Güncelleniyor...';
+
+  setApiDot('dotFB','wait','Futbol API\'ye bağlanıyor...');
+
+  // Parallel fetch
+  const [fbToday, fbLive, bbToday] = await Promise.all([
+    apiFetch(`/fixtures?date=${TODAY}`),
+    apiFetch(`/fixtures?live=all`),
+    apiFetch(`/games?date=${TODAY}`, BB_URL),
+  ]);
+
+  // API başarısız mı?
+  const fbFailed = fbToday === null;
+  const bbFailed = bbToday === null;
+
+  setApiDot('dotFB', fbFailed?'err':'ok', fbFailed?'Bağlantı hatası':'Bağlantı başarılı');
+  setApiDot('dotBB', bbFailed?'err':'ok', bbFailed?'Bağlantı hatası':'Bağlantı başarılı');
+
+  if(fbFailed || (fbToday && fbToday.length===0 && fbLive && fbLive.length===0)){
+    // Demo moda geç
+    usingDemo = true;
+    fbAll = getDemoData();
+    bbAll  = getDemoBB();
+    document.getElementById('demoBanner').style.display='flex';
+    setApiDot('dotFB','err','API limit veya key hatası');
+    setApiDot('dotOD','err','Oran verisi yok');
+    document.getElementById('apiMsg').textContent='⚠ API bağlanamadı — Demo mod aktif';
+  } else {
+    usingDemo = false;
+    document.getElementById('demoBanner').style.display='none';
+
+    // Merge live
+    const lIds = new Set((fbLive||[]).map(m=>m.fixture?.id));
+    fbAll = (fbToday||[]).map(m=>lIds.has(m.fixture?.id)?(fbLive.find(l=>l.fixture?.id===m.fixture?.id)||m):m);
+    (fbLive||[]).forEach(l=>{if(!fbAll.find(m=>m.fixture?.id===l.fixture?.id))fbAll.push(l);});
+    bbAll = bbToday||[];
+    fbAll.sort((a,b)=>new Date(a.fixture?.date||0)-new Date(b.fixture?.date||0));
+
+    // Odds için NS maçları — priority ligler önce
+    setApiDot('dotOD','wait','Oranlar yükleniyor...');
+    const ns = fbAll.filter(m=>isNS(m.fixture?.status));
+    const pri = ns.filter(m=>PRI_IDS.includes(m.league?.id)).slice(0,8);
+    const oth = ns.filter(m=>!PRI_IDS.includes(m.league?.id)).slice(0,6);
+    const toLoad=[...pri,...oth];
+
+    let oddsOk=0;
+    for(const m of toLoad){
+      const isPri = PRI_IDS.includes(m.league?.id);
+      if(isPri){
+        [m._odds,m._pred]=await Promise.all([fetchOdds(m.fixture.id),fetchPred(m.fixture.id)]);
+      } else {
+        m._odds=await fetchOdds(m.fixture.id);
+      }
+      if(m._odds?.home&&m._odds.home!=='—') oddsOk++;
+      await new Promise(r=>setTimeout(r,220));
+    }
+    setApiDot('dotOD',oddsOk>0?'ok':'err',`${oddsOk} maç için oran alındı`);
+    document.getElementById('apiMsg').textContent=`✓ ${fbAll.length} futbol · ${bbAll.length} basketbol maçı yüklendi`;
+  }
+
+  // Stats
+  const lvC=fbAll.filter(m=>isLv(m.fixture?.status)).length;
+  const fnC=fbAll.filter(m=>isFn(m.fixture?.status)).length;
+  const nsC=fbAll.filter(m=>isNS(m.fixture?.status)).length;
+  const valC=fbAll.filter(m=>{const o=m._odds||{};return vScore(o.home,o.draw,o.away)>=70;}).length;
+  const lgs=new Set([...fbAll.map(m=>m.league?.name),...bbAll.map(m=>m.league?.name)].filter(Boolean));
+
+  // KPI
+  document.getElementById('kT').textContent=fbAll.length+bbAll.length;
+  document.getElementById('kN').textContent=nsC;
+  document.getElementById('kL').textContent=lvC;
+  document.getElementById('kF').textContent=fnC;
+  document.getElementById('kLG').textContent=lgs.size;
+  document.getElementById('kTm').textContent=nowS();
+  document.getElementById('kS').textContent=`${fbAll.length}⚽ · ${bbAll.length}🏀`;
+  document.getElementById('liveCnt').textContent=lvC;
+  document.getElementById('lvBadge').textContent=lvC;
+  document.getElementById('sF').textContent=fbAll.length;
+  document.getElementById('sB').textContent=bbAll.length;
+  document.getElementById('sN').textContent=nsC;
+  document.getElementById('sL').textContent=lvC;
+  document.getElementById('sFn').textContent=fnC;
+  document.getElementById('sV').textContent=valC;
+
+  // Leagues sidebar
+  const lgMap={};
+  fbAll.forEach(m=>{const k=m.league?.name;if(k)lgMap[k]=(lgMap[k]||0)+1;});
+  const lgArr=Object.entries(lgMap).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  document.getElementById('lgArea').innerHTML=lgArr.length
+    ?lgArr.map(([n,c])=>`<div class="lg-r"><span class="lg-n">${n}</span><span class="lg-c">${c}</span></div>`).join('')
+    :'<div class="ltxt">Veri yok</div>';
+
+  // Upcoming
+  const up=fbAll.filter(m=>isNS(m.fixture?.status)).sort((a,b)=>new Date(a.fixture.date)-new Date(b.fixture.date)).slice(0,6);
+  document.getElementById('upArea').innerHTML=up.length
+    ?up.map(m=>`<div class="up-r">
+       <div class="up-lg">${m.league?.country||''} · ${m.league?.name||'—'}</div>
+       <div class="up-t">${m.teams?.home?.name||'—'} <span style="color:var(--dim)">vs</span> ${m.teams?.away?.name||'—'}</div>
+       <div class="up-h">${fmt(m.fixture?.date)}</div>
+     </div>`).join('')
+    :'<div class="ltxt">Yaklaşan maç yok</div>';
+
+  renderCards();
+  renderHist();
+  document.getElementById('mUpd').textContent=`↻ ${nowS()}`;
+  btn.classList.remove('busy');btn.textContent='↻ Yenile';
+  setTimeout(animBars,200);
+}
+
+function setApiDot(id,state,msg){
+  const d=document.getElementById(id);
+  d.className='api-dot '+(state==='ok'?'api-ok':state==='err'?'api-err':'api-wait');
+  if(msg) document.getElementById('apiMsg').textContent=msg;
+}
+
+function animBars(){
+  document.querySelectorAll('.vbar-f[data-w]').forEach(b=>{b.style.width=(b.dataset.w||0)+'%';});
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function renderCards(){
+  const liveM=fbAll.filter(m=>isLv(m.fixture?.status));
+  const secLive=document.getElementById('secLive');
+  if(liveM.length){
+    secLive.style.display='block';
+    document.getElementById('liveCards').innerHTML=liveM.map((m,i)=>mkCard(m,'fb',i)).join('');
+  } else {
+    secLive.style.display='none';
+  }
+
+  let fb=fbAll.filter(m=>!isLv(m.fixture?.status));
+  let bb=[...bbAll];
+
+  switch(activeTab){
+    case 'ns':    fb=fb.filter(m=>isNS(m.fixture?.status));break;
+    case 'live':  fb=[];bb=[];break;
+    case 'ft':    fb=fb.filter(m=>isFn(m.fixture?.status));break;
+    case 'value': fb=fb.filter(m=>{const o=m._odds||{};return vScore(o.home,o.draw,o.away)>=70;});break;
+    case 'tr':    fb=fb.filter(m=>TR_IDS.includes(m.league?.id));bb=[];break;
+    case 'ucl':   fb=fb.filter(m=>EU_IDS.includes(m.league?.id));bb=[];break;
+    case 'bb':    fb=[];break;
+  }
+
+  if(activeSport==='fb') bb=[];
+  if(activeSport==='bb') fb=[];
+
+  const sortFn = sortMode==='league'
+    ?(a,b)=>(a.league?.name||'').localeCompare(b.league?.name||'')
+    :sortMode==='value'
+    ?(a,b)=>vScore((b._odds||{}).home,(b._odds||{}).draw,(b._odds||{}).away)-vScore((a._odds||{}).home,(a._odds||{}).draw,(a._odds||{}).away)
+    :(a,b)=>new Date(a.fixture?.date||0)-new Date(b.fixture?.date||0);
+
+  fb.sort(sortFn);
+
+  let html='';
+
+  if(activeSport!=='bb'){
+    const nsF=fb.filter(m=>isNS(m.fixture?.status));
+    const otF=fb.filter(m=>!isNS(m.fixture?.status));
+    if(nsF.length){
+      html+=`<div class="sec-label">⏳ Başlamamış Maçlar <span class="sbadge sb-y">${nsF.length} maç</span></div>`;
+      html+=nsF.map((m,i)=>mkCard(m,'fb',i)).join('');
+    }
+    if(otF.length){
+      html+=`<div class="sec-label">📋 Diğer Maçlar <span class="sbadge sb-g">${otF.length} maç</span></div>`;
+      html+=otF.map((m,i)=>mkCard(m,'fb',i+nsF.length)).join('');
+    }
+    if(!fb.length&&activeSport!=='bb'){
+      html+='<div class="err">Bu kritere uygun futbol maçı bulunamadı.</div>';
+    }
+  }
+
+  if(activeSport!=='fb'&&!['tr','ucl'].includes(activeTab)&&bb.length){
+    html+=`<div class="sec-label">🏀 Basketbol <span class="sbadge sb-t">${bb.length} maç</span></div>`;
+    html+=bb.map((m,i)=>mkCard(m,'bb',i)).join('');
+  }
+
+  document.getElementById('mainCards').innerHTML=html||'<div class="err">Maç bulunamadı.</div>';
+  setTimeout(animBars,150);
+}
+
+// ================================================================
+// CARD
+// ================================================================
+function mkCard(m,sp,idx=0){
+  const isF=sp==='fb';
+  const hn=m.teams?.home?.name||'—';
+  const an=m.teams?.away?.name||'—';
+  const ln=m.league?.name||'—';
+  const cn=m.league?.country||'';
+  const so=isF?m.fixture?.status:m.status;
+  const ko=isF?m.fixture?.date:m.date;
+  const{t:stxt,lv,fi}=stLbl(so,ko);
+  const goals=isF?m.goals:m.scores;
+  const sH=isF?(goals?.home??''):(goals?.home?.total??'');
+  const sA=isF?(goals?.away??''):(goals?.away?.total??'');
+  const hasScore=lv&&sH!==''&&sA!=='';
+  const o=m._odds||{};
+  const ho=o.home||'—',dr=o.draw||'—',aw=o.away||'—';
+  const vs=vScore(ho,dr,aw);
+  const isVal=vs>=70;
+  const pred=m._pred;
+  const ph=implP(ho),pd=implP(dr),pa=implP(aw);
+  const hoHot=parseFloat(ho)>2.3;
+  const awHot=parseFloat(aw)>3.5;
+  const isDemo=m._isDemo;
+
+  const ctr=hasScore
+    ?`<div class="mc-ctr"><div class="lsco">${sH}–${sA}</div><div class="lmin">${so?.elapsed||''}'</div></div>`
+    :`<div class="mc-ctr"><div class="vs-l">vs</div><div class="ko-t">${isNS(so)?fmt(ko):'—'}</div></div>`;
+
+  const oddsHtml=isF
+    ?`<div class="odds">
+        <div class="od ${hoHot?'hot':''} ${!hoHot&&isVal?'val':''}">
+          ${!hoHot&&isVal?'<div class="vchip">DEĞER</div>':''}
+          <div class="od-l">1 Ev</div><div class="od-v">${ho}</div><div class="od-p">${ph}</div>
+        </div>
+        <div class="od">
+          <div class="od-l">X Ber</div><div class="od-v">${dr}</div><div class="od-p">${pd}</div>
+        </div>
+        <div class="od ${awHot?'hot':''}">
+          ${awHot?'<div class="vchip" style="background:var(--gold)">DEĞER</div>':''}
+          <div class="od-l">2 Dep</div><div class="od-v">${aw}</div><div class="od-p">${pa}</div>
+        </div>
+       </div>
+       ${o.over||o.gg?`<div class="mkts">${o.over?`<div class="mkt">+2.5 <b>${o.over}</b></div>`:''}${o.gg?`<div class="mkt">KG Var <b>${o.gg}</b></div>`:''}</div>`:''}`
+    :`<div class="odds">
+        <div class="od ${parseFloat(ho)<1.7?'hot':''}">
+          <div class="od-l">Ev Gal.</div><div class="od-v">${ho}</div><div class="od-p">${ph}</div>
+        </div>
+        <div class="od ${parseFloat(aw)<1.7?'hot':''}">
+          <div class="od-l">Dep Gal.</div><div class="od-v">${aw}</div><div class="od-p">${pa}</div>
+        </div>
+        <div class="od"><div class="od-l">Handikap</div><div class="od-v">—</div></div>
+       </div>`;
+
+  const aiHtml=pred
+    ?`<div class="ai-row">
+        <span class="ai-lbl">AI TAHMİN</span>
+        <span class="ai-pick">${pred.winner?.name||pred.advice||'—'}</span>
+        <span class="ai-pct">${pred.percent?.home||''}% · ${pred.percent?.draw||''}% · ${pred.percent?.away||''}</span>
+      </div>`:
+    '';
+
+  const accentC=lv?'var(--red)':sp==='bb'?'var(--teal)':isVal?'var(--gold)':'var(--gold)';
+
+  return `<div class="mc ${lv?'lv':''}" style="animation-delay:${Math.min(idx*.04,.5)}s">
+    <div class="mc-bar" style="background:${accentC}"></div>
+    <div class="mc-top">
+      <div class="mc-lg">${cn?`${cn} ·`:''} ${ln}${TR_IDS.includes(m.league?.id)?' 🇹🇷':''}${EU_IDS.includes(m.league?.id)?' ⭐':''}${isDemo?' <span style="color:var(--dim);font-size:8px">[DEMO]</span>':''}</div>
+      <div class="mc-st ${lv?'lv':''} ${fi?'fi':''}">${lv?`🔴 ${stxt}`:stxt}</div>
+    </div>
+    <div class="mc-teams">
+      <div class="team"><div class="tn">${hn}</div><div class="ts">${isF?'Ev sahibi':'Ev'}</div></div>
+      ${ctr}
+      <div class="team r"><div class="tn">${an}</div><div class="ts">${isF?'Deplasman':'Dep'}</div></div>
+    </div>
+    ${oddsHtml}
+    ${aiHtml}
+    <div class="vbar">
+      <div class="vbar-t"><div class="vbar-f" style="width:0%" data-w="${vs}"></div></div>
+      <div class="vbar-ft"><span>Değer Skoru</span><span style="color:${vColor(vs)}">${vs}/100${isVal?' ★':''}</span></div>
+    </div>
+  </div>`;
+}
+
+// ================================================================
+// TABS / SPORT / SORT
+// ================================================================
+function setTab(t,btn){
+  activeTab=t;
+  document.querySelectorAll('.nv').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  document.querySelectorAll('.tab').forEach(b=>{ if(b.getAttribute('onclick')?.includes(`'${t}'`)) b.classList.add('on'); else b.classList.remove('on'); });
+  renderCards();
+}
+function setSubTab(t,btn){
+  activeTab=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderCards();
+}
+function setSport(s,btn){
+  activeSport=s;
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderCards();
+}
+function doSort(){sortMode=document.getElementById('sortSel').value;renderCards();}
+
+// ================================================================
+// COUPON
+// ================================================================
+let couponType='banko';
+function setCt(t,btn){couponType=t;document.querySelectorAll('.cpt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+
+async function genCoupon(){
+  const btn=document.getElementById('genBtn');
+  const area=document.getElementById('couponArea');
+  btn.disabled=true;btn.textContent='✦ Analiz ediliyor...';
+  area.innerHTML=`<div class="ldr" style="padding:16px"><div class="spin"></div><div class="ltxt">AI KUPON OLUŞTURULUYOR...</div></div>`;
+
+  const pool=fbAll
+    .filter(m=>isNS(m.fixture?.status)&&m._odds?.home&&m._odds.home!=='—')
+    .sort((a,b)=>{const oa=a._odds||{},ob=b._odds||{};return vScore(ob.home,ob.draw,ob.away)-vScore(oa.home,oa.draw,oa.away);})
+    .slice(0,20)
+    .map(m=>({
+      home:m.teams?.home?.name,away:m.teams?.away?.name,
+      league:m.league?.name,country:m.league?.country,
+      time:fmt(m.fixture?.date),odds:m._odds,
+      valueScore:vScore(m._odds?.home,m._odds?.draw,m._odds?.away),
+      aiWinner:m._pred?.winner?.name||null,
+      aiAdvice:m._pred?.advice||null,
+      pctH:m._pred?.percent?.home||null,
+      pctD:m._pred?.percent?.draw||null,
+      pctA:m._pred?.percent?.away||null,
+    }));
+
+  const mData=pool.length>=3?pool:getDemoPool();
+  const typeMap={
+    banko:'3-4 maç. Toplam oran 3-7. Güven >72%. Düşük risk.',
+    sistem:'5-6 maç. Sistem kuponu 4/6 veya 5/6. Toplam oran 15-40.',
+    risk:'4-5 maç. Yüksek oran, toplam 25+. Sürpriz seçimler dahil.',
+  };
+  const prompt=`Uzman spor analistisi olarak bugünkü başlamamış futbol maçlarını analiz et.
+
+MAÇLAR:
+${JSON.stringify(mData,null,2)}
+
+KUPON TİPİ: ${typeMap[couponType]}
+Analiz: valueScore yüksek maçları önceliklendir, aiWinner ve aiAdvice varsa kullan, ev avantajı ve form değerlendir.
+
+SADECE JSON:
+{"selections":[{"match":"Ev vs Dep","league":"Lig","time":"19:00","pick":"Seçim","odd":"2.15","confidence":78,"reason":"Kısa gerekçe"}],"totalOdd":"6.45","riskLevel":"Düşük","summary":"Not"}`;
+
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();
+    const txt=d.content?.map(c=>c.text||'').join('')||'';
+    const coup=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    showCoupon(coup);saveHist(coup);
+  }catch(e){
+    const coup=fallbackCoupon(mData,couponType);
+    showCoupon(coup);saveHist(coup);
+  }
+  btn.disabled=false;btn.textContent='✦ Kupon Oluştur';
+}
+
+function getDemoPool(){
+  return[
+    {home:'Galatasaray',away:'Fenerbahçe',league:'Süper Lig',country:'Turkey',time:'19:00',odds:{home:'2.20',draw:'3.10',away:'3.30'},valueScore:74,aiWinner:'Galatasaray',aiAdvice:'Ev sahibi güçlü form'},
+    {home:'Real Madrid',away:'Atletico',league:'La Liga',country:'Spain',time:'21:00',odds:{home:'1.85',draw:'3.60',away:'4.00'},valueScore:82,aiWinner:'Real Madrid',aiAdvice:null},
+    {home:'Man City',away:'Arsenal',league:'Premier League',country:'England',time:'20:00',odds:{home:'1.80',draw:'3.70',away:'4.20'},valueScore:79,aiWinner:null,aiAdvice:'Ev üstünlüğü'},
+    {home:'Bayern',away:'Dortmund',league:'Bundesliga',country:'Germany',time:'20:30',odds:{home:'1.70',draw:'3.80',away:'4.80'},valueScore:71,aiWinner:'Bayern',aiAdvice:null},
+    {home:'PSG',away:'Lyon',league:'Ligue 1',country:'France',time:'21:00',odds:{home:'1.50',draw:'4.00',away:'6.50'},valueScore:56,aiWinner:'PSG',aiAdvice:'Büyük favori'},
+  ];
+}
+
+function fallbackCoupon(matches,type){
+  const cnt=type==='banko'?3:type==='sistem'?5:4;
+  const sorted=[...matches].sort((a,b)=>b.valueScore-a.valueScore).slice(0,cnt);
+  const reasons=['Yüksek değer skoru, ev avantajı var','AI tahmini oran değeriyle uyuşuyor','Son form ve istatistik destekliyor','Rakip savunma zafiyeti mevcut','Oran zımni olasılık üzerinde'];
+  const sels=sorted.map((m,i)=>{
+    const useH=parseFloat(m.odds?.home||0)<parseFloat(m.odds?.away||99);
+    return{match:`${m.home} vs ${m.away}`,league:`${m.country||''} · ${m.league}`,time:m.time,pick:`${m.aiWinner||(useH?m.home:m.away)} Galibiyeti`,odd:useH?(m.odds?.home||'—'):(m.odds?.away||'—'),confidence:Math.min(88,52+Math.round(m.valueScore*.35)),reason:m.aiAdvice||reasons[i%reasons.length]};
+  });
+  const tot=sels.reduce((a,s)=>a*parseFloat(s.odd||1),1).toFixed(2);
+  return{selections:sels,totalOdd:tot,riskLevel:{banko:'Düşük',sistem:'Orta',risk:'Yüksek'}[type],summary:{banko:'Güvenilir 3 seçim',sistem:'5 maçlık sistem',risk:'Yüksek getiri hedefli'}[type]};
+}
+
+function showCoupon(c){
+  const area=document.getElementById('couponArea');
+  if(!c?.selections?.length){area.innerHTML='<div class="err">Kupon oluşturulamadı.</div>';return;}
+  const items=c.selections.map((s,i)=>`<div class="ci" style="animation-delay:${i*.08}s">
+    <div class="ci-m">${s.match}</div>
+    <div class="ci-r"><div><div class="ci-lbl">${s.league||''} ${s.time?'· '+s.time:''}</div><div class="ci-pk">${s.pick}</div></div><div class="ci-od">${s.odd}</div></div>
+    <div class="ci-w">${s.reason}</div>
+    <div class="ci-b"><div class="ci-tr"><div class="ci-fl" style="width:${s.confidence||60}%"></div></div><div class="ci-pc">${s.confidence||60}%</div></div>
+  </div>`).join('');
+  area.innerHTML=`${items}<div class="tot"><div><div class="tot-l">TOPLAM KATSAYI · ${c.riskLevel||''} RİSK</div><div style="font-size:9px;color:var(--fog);margin-top:2px;font-family:'Space Mono',monospace">${c.summary||''}</div></div><div class="tot-r">×${c.totalOdd}</div></div>`;
+}
+
+function saveHist(c){
+  hist.unshift({date:new Date().toLocaleDateString('tr-TR'),type:couponType,totalOdd:c.totalOdd||'—',cnt:c.selections?.length||0,result:'pending'});
+  if(hist.length>30) hist=hist.slice(0,30);
+  localStorage.setItem('skorer2_hist',JSON.stringify(hist));
+  renderHist();
+}
+
+function renderHist(){
+  const area=document.getElementById('histArea');
+  if(!hist.length){area.innerHTML='<div class="ltxt" style="font-size:9px">Henüz kupon yok</div>';return;}
+  area.innerHTML=hist.slice(0,8).map(h=>{
+    const cls=h.result==='win'?'hw':h.result==='loss'?'hl':'hp';
+    const b=h.result==='win'?'G':h.result==='loss'?'K':'?';
+    return`<div class="hi-r"><div class="hb ${cls}">${b}</div><div class="hi"><div class="hm">${h.date} · ${(h.type||'').toUpperCase()}</div><div class="hd">${h.cnt||0} maç · ×${h.totalOdd}</div></div></div>`;
+  }).join('');
+}
+
+// ================================================================
+// INIT
+// ================================================================
+renderHist();
+loadAll();
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>
